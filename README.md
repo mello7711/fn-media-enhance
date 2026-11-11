@@ -1,6 +1,6 @@
-# 飞牛影视增强（夸克版）
+# 飞牛影视增强
 
-飞牛影视（trim.media）的第三方增强插件，专为 **夸克网盘 STRM 片库** 设计。补全 STRM 元数据、给首页海报加分辨率角标、在播放器里提供 rkmpp 硬件转码画质菜单，并隐藏无头像演员。
+飞牛影视（trim.media）的第三方增强插件，面向 **STRM 片库**（夸克网盘、LitePan 直链等）。补全 STRM 元数据、给首页海报加分辨率角标、在播放器里提供 rkmpp 硬件转码画质菜单，并隐藏无头像演员。
 
 > 反代入口 `:8666`，原版 `:8005` / `:5666` 入口保持原样、不受影响。
 
@@ -22,8 +22,8 @@
 
 ## 安装
 
-1. 应用中心 → 手动安装 → 选择 `fn-media-enhance-quark-1.0.3.fpk`（ARM 平台）。
-2. 应用中心启用「飞牛影视增强（夸克版）」。
+1. 应用中心 → 手动安装 → 选择 `fn-media-enhance-generic-1.0.3.fpk`（ARM 平台）。
+2. 应用中心启用「飞牛影视增强」。
 3. 配置页：`http://<NAS>:5230/enhance/`（补全开关、间隔、默认分辨率、演员隐藏）。
 4. 影视入口使用 `http://<NAS>:8666/v`（角标与画质菜单在此入口生效）。
 
@@ -57,7 +57,7 @@ build.sh            # 打包脚本：./build.sh → *.fpk
 ## 构建
 
 ```bash
-./build.sh   # 生成 fn-media-enhance-quark-<version>.fpk
+./build.sh   # 生成 fn-media-enhance-generic-<version>.fpk
 ```
 
 ## 许可
