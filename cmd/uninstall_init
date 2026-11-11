@@ -1,0 +1,40 @@
+#!/bin/bash
+# 卸载前清理：停止 sidecar 与反代，并把飞牛前端 bundle 还原为原始版本。
+APPD="$TRIM_APPDEST/server"
+VAR="$TRIM_PKGVAR"
+
+[ -f "$VAR/sidecar.pid" ] && kill "$(cat "$VAR/sidecar.pid")" 2>/dev/null
+sleep 1
+pkill -9 -f "enhance-proxy" 2>/dev/null || true
+pkill -9 -f "server.py" 2>/dev/null || true
+[ -n "$TRIM_APPDEST" ] && rm -f "$TRIM_APPDEST/app.sock" 2>/dev/null
+
+python3 - "$APPD" <<'PY'
+import sys, pathlib
+apd = sys.argv[1]
+sys.path.insert(0, apd)
+try:
+    import player_patch, actor_visibility
+except Exception:
+    sys.exit(0)
+S = pathlib.Path('/usr/local/apps/@appcenter/trim.media/static/assets')
+a = S / 'bf29a647181e25c03987ab8cc8f81a1a-DB2rIeMx.js'
+b = S / '74c95604043427f0bee1d0e16bfa53af-DZn1lJtt.js'
+try:
+    if a.is_file():
+        t = player_patch.unpatch_app_js(a.read_bytes())
+        if t:
+            a.write_bytes(t)
+except Exception:
+    pass
+try:
+    if b.is_file():
+        t = player_patch.unpatch_player_js(b.read_bytes())
+        patched = actor_visibility.ACTOR_ANCHOR[:-3] + actor_visibility.ACTOR_FILTER + 'let'
+        t = t.replace(patched.encode(), actor_visibility.ACTOR_ANCHOR.encode(), 1)
+        b.write_bytes(t)
+except Exception:
+    pass
+PY
+
+exit 0
