@@ -2,8 +2,9 @@
 # 构建 fpk：在仓库根目录运行 ./build.sh
 set -e
 cd "$(dirname "$0")"
+APPNAME=$(grep '^appname=' manifest | cut -d= -f2)
 VER=$(grep '^version=' manifest | cut -d= -f2)
-OUT="fn-media-enhance-quark-${VER}.fpk"
+OUT="${APPNAME}-${VER}.fpk"
 
 rm -rf build
 mkdir -p build/app build/fpk
