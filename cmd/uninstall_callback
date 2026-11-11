@@ -1,0 +1,6 @@
+#!/bin/bash
+# 卸载后兜底清理（应用目录可能已移除，这里只做进程与 socket 兜底）。
+pkill -9 -f "enhance-proxy" 2>/dev/null || true
+pkill -9 -f "server.py" 2>/dev/null || true
+[ -n "$TRIM_APPDEST" ] && rm -f "$TRIM_APPDEST/app.sock" 2>/dev/null
+exit 0
