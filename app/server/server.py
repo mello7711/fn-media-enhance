@@ -146,33 +146,38 @@ def media(mid):
     if urlsplit(url).scheme not in ('http','https'): raise ValueError('仅支持 HTTP/HTTPS STRM')
     return dict(row),url
 
-# 夸克专用：STRM 里的 LitePan 链接是 TV302 转码播放地址，ffprobe 只能拿到
-# H.264 1440x604 + AAC，无字幕流。原文件在夸克 FUSE 挂载里，含完整流信息
-#（HEVC 1920x804、AC3 音轨、PGS 字幕）。先探原文件，失败再回落探 URL。
-QUARK_STRM_ROOT='/vol1/1000/video/strm/夸克'
-QUARK_PAN_ROOT='/vol1/1000/video/pan/夸克'
-QUARK_VIDEO_EXTS=('.mkv','.mp4','.avi','.mov','.ts','.m2ts','.rmvb','.wmv','.flv','.webm','.mpg','.mpeg','.3gp','.m4v')
+# STRM 探测增强：部分直链（如网盘转码播放地址）只能拿到降级流信息
+#（低分辨率、无字幕）。若存在本地镜像挂载（LitePan 等工具的常见布局：
+# <root>/video/strm/... 与 <root>/video/pan/... 结构一致），优先探测镜像
+# 原文件，失败再回落探测 URL。
+STRM_MIRROR_FROM='/video/strm/'
+STRM_MIRROR_TO='/video/pan/'
+STRM_VIDEO_EXTS=('.mkv','.mp4','.avi','.mov','.ts','.m2ts','.rmvb','.wmv','.flv','.webm','.mpg','.mpeg','.3gp','.m4v')
 
-def quark_original_path(strm_path):
-    """STRM 路径 -> 夸克 FUSE 挂载里的原文件路径；找不到返回 None。"""
+def mirror_original_path(strm_path):
+    """STRM 路径 -> 本地镜像原文件路径；找不到返回 None。"""
     try:
-        p=Path(strm_path)
-        if not str(p).startswith(QUARK_STRM_ROOT+'/'): return None
-        rel=p.relative_to(QUARK_STRM_ROOT)
+        s=str(strm_path)
+        if STRM_MIRROR_FROM not in s: return None
+        idx=s.index(STRM_MIRROR_FROM)
+        prefix=s[:idx]
+        rel=Path(s[idx+len(STRM_MIRROR_FROM):])
+        mirror_root=Path(prefix+STRM_MIRROR_TO)
+        if not mirror_root.is_dir(): return None
         stem=rel.stem
         # 候选 1：同相对目录；候选 2：中间插一层“影视剧”
         #（strm 里“电影/外语电影”，原文件是“影视剧/电影/外语电影”）
-        for parent in (Path(QUARK_PAN_ROOT)/rel.parent, Path(QUARK_PAN_ROOT)/'影视剧'/rel.parent):
-            for ext in QUARK_VIDEO_EXTS:
+        for parent in (mirror_root/rel.parent, mirror_root/'影视剧'/rel.parent):
+            for ext in STRM_VIDEO_EXTS:
                 cand=parent/(stem+ext)
                 if cand.is_file(): return str(cand)
-        # 候选 3：按文件名在挂载里搜一次（单条 find，15 秒兜底）
+        # 候选 3：按文件名在镜像挂载里搜一次（单条 find，15 秒兜底）
         cond=[]
-        for ext in QUARK_VIDEO_EXTS:
+        for ext in STRM_VIDEO_EXTS:
             cond += ['-name', stem+ext, '-o']
         cond = cond[:-1]
         try:
-            r=subprocess.run(['find',QUARK_PAN_ROOT,'-type','f','(']+cond+[')','-print','-quit'],capture_output=True,text=True,timeout=15)
+            r=subprocess.run(['find',str(mirror_root),'-type','f','(']+cond+[')','-print','-quit'],capture_output=True,text=True,timeout=15)
         except Exception:
             return None
         hit=(r.stdout or '').strip().splitlines()
@@ -186,7 +191,7 @@ def probe(mid,ctx=None):
     try:row,url=media(mid)
     except ValueError:raise TaskError('INVALID_MEDIA')
     if ctx:ctx.stage('probing')
-    target=quark_original_path(row.get('path','') if isinstance(row,dict) else '') or url
+    target=mirror_original_path(row.get('path','') if isinstance(row,dict) else '') or url
     p=RUNTIME.run_process(['ffprobe','-v','error','-rw_timeout','15000000','-analyzeduration','5000000','-probesize','5000000','-show_streams','-show_format','-of','json',target],timeout=45,ctx=ctx,check=False)
     if p.returncode and target!=url:
         # 探原文件失败，回落探 LitePan URL（通用版行为）
