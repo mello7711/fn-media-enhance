@@ -1,0 +1,17 @@
+appname=fn-media-enhance-quark
+version=1.0.3
+display_name=飞牛影视增强（夸克版）
+desc="""<b>飞牛影视增强（夸克版）</b>：STRM 信息补全（直接写入飞牛数据库，8005/8666 双入口生效）、首页海报分辨率角标、播放器画质菜单（rkmpp 硬件转码 1080/720/480）、无头像演员隐藏。反代飞牛影视到 8666 端口，原版 8005/5666 入口不受影响。需要配合飞牛影视使用。"""
+platform=arm
+source=thirdparty
+maintainer=mello7711
+distributor=mello7711
+os_min_version=1.1.3100
+ctl_stop=true
+install_type=root
+desktop_uidir=ui
+desktop_applaunchname=fn-media-enhance-quark.Application
+service_port=8666
+checkport=true
+disable_authorization_path=true
+changelog=v1.0.3 修复 8666 黑屏（补丁资产回源路由）、播放失败（stream 透传+签名头）、画质菜单不显示（可见性补丁）、转码出片失败（scale_rkrga nv12）、详情页重复按钮（fill 收口）；反代生命周期改由插件自管，无独立服务

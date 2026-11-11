@@ -1,0 +1,5 @@
+本应用包含两类代码：
+1. Python 插件与管理 UI（原创）：MIT 许可。
+2. 从 Ponphil/LitePan 衍生的 Go 反代组件（enhance.go / resolution_enhance.go）：
+   沿用上游 PolyForm Noncommercial 1.0.0 许可（https://polyformproject.org/licenses/noncommercial/1.0.0/），
+   仅限非商业用途。详情参见源文件头部与上游仓库声明。

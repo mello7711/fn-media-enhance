@@ -1,0 +1,62 @@
+#!/bin/bash
+# fn-media-enhance-quark 服务管理（fnOS 应用框架调用）
+# server.py 自带反代生命周期（配置开关 enabled 控制 8666 反代的启停），
+# 这里只负责拉起/停止 sidecar 进程本身。
+APPD="$TRIM_APPDEST/server"
+VAR="$TRIM_PKGVAR"
+
+do_start() {
+    mkdir -p "$VAR/state" "$VAR"
+    cd "$APPD" || exit 1
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+    # 清理残留，防止端口占用导致无法启用
+    pkill -9 -f "enhance-proxy" 2>/dev/null || true
+    pkill -9 -f "server.py" 2>/dev/null || true
+    [ -n "$TRIM_APPDEST" ] && rm -f "$TRIM_APPDEST/app.sock" 2>/dev/null
+
+    if [ ! -s "$VAR/token" ]; then
+        (openssl rand -hex 24 2>/dev/null || python3 -c "import secrets;print(secrets.token_hex(24))") > "$VAR/token"
+        chmod 600 "$VAR/token"
+    fi
+    export FN_ENHANCE_TOKEN="$(cat "$VAR/token")"
+    export FN_ENHANCE_STATE="$VAR/state"
+    export FN_ENHANCE_UPSTREAM="http://127.0.0.1:5230"
+    export FNOS_UPSTREAM="${FNOS_UPSTREAM:-http://127.0.0.1:8005}"
+    export LISTEN="${LISTEN:-:8666}"
+    export APP_SOCK="$TRIM_APPDEST/app.sock"
+    export APP_NAME="${TRIM_APPNAME:-fn-media-enhance-quark}"
+
+    nohup python3 server.py >> "$VAR/enhance.log" 2>&1 &
+    echo $! > "$VAR/sidecar.pid"
+    exit 0
+}
+
+do_stop() {
+    [ -f "$VAR/sidecar.pid" ] && kill "$(cat "$VAR/sidecar.pid")" 2>/dev/null
+    sleep 1
+    [ -f "$VAR/sidecar.pid" ] && kill -9 "$(cat "$VAR/sidecar.pid")" 2>/dev/null
+    rm -f "$VAR/sidecar.pid"
+    pkill -9 -f "enhance-proxy" 2>/dev/null || true
+    pkill -9 -f "server.py" 2>/dev/null || true
+    [ -n "$TRIM_APPDEST" ] && rm -f "$TRIM_APPDEST/app.sock" 2>/dev/null
+    exit 0
+}
+
+do_status() {
+    if [ -f "$VAR/sidecar.pid" ]; then
+        kill -0 "$(cat "$VAR/sidecar.pid")" 2>/dev/null || exit 3
+    else
+        exit 3
+    fi
+    exit 0
+}
+
+case "$1" in
+    start) do_start ;;
+    stop) do_stop ;;
+    restart) do_stop; do_start ;;
+    status) do_status ;;
+    log) tail -n "${2:-50}" "$VAR/enhance.log" 2>/dev/null; exit 0 ;;
+    *) exit 1 ;;
+esac
