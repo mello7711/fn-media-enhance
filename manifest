@@ -12,6 +12,6 @@ install_type=root
 desktop_uidir=ui
 desktop_applaunchname=fn-media-enhance.Application
 service_port=8666
-checkport=true
+checkport=false
 disable_authorization_path=true
 changelog=v1.0.3 修复 8666 黑屏（补丁资产回源路由）、播放失败（stream 透传+签名头）、画质菜单不显示（可见性补丁）、转码出片失败（scale_rkrga nv12）、详情页重复按钮（fill 收口）；反代生命周期改由插件自管，无独立服务
